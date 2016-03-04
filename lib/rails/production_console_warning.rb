@@ -30,7 +30,7 @@ module Rails
             condition: lambda { Rails.env.test? }
           },
           {
-            color: 32, #development
+            color: 32, #green
             text:  'DEVELOPMENT',
             condition: lambda { Rails.env.development? }
           }

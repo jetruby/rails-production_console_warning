@@ -3,6 +3,29 @@
 Create initializer to override default parameters:
 ```
 Rails::ProductionConsoleWarning.configure do |config|
+  # main condition that is called before warnings configured by @default_warnings and @custom_warnings
+  config.warnings_condintion = lambda { some_condition }
+
+  # it has default warnings, that you can ovirride
+  config.default_warnings = [
+    {
+      color: 31, #red
+      text:  'PRODUCTION',
+      condition: lambda { Rails.env.production? }
+    },
+    {
+      color: 34, #blue
+      text:  'TEST',
+      condition: lambda { Rails.env.test? }
+    },
+    {
+      color: 32, #green
+      text:  'DEVELOPMENT',
+      condition: lambda { Rails.env.development? }
+    }
+  ]
+
+  # and custom warnings that is empty by default
   config.custom_warnings = [
     {
       color: 33, #brown
