@@ -13,11 +13,43 @@ module Rails
     end
 
     class Configuration
-      attr_accessor :custom_text, :condition
+      attr_accessor :warnings_condintion, :default_warnings, :custom_warnings
 
       def initialize
-        @custom_text = nil
-        @condition   = lambda { Rails.env.production? }
+        @warnings_condintion = lambda { true }
+
+        @default_warnings = [
+          {
+            color: 31, #red
+            text:  'PRODUCTION',
+            condition: lambda { Rails.env.production? }
+          },
+          {
+            color: 34, #blue
+            text:  'TEST',
+            condition: lambda { Rails.env.test? }
+          },
+          {
+            color: 32, #green
+            text:  'DEVELOPMENT',
+            condition: lambda { Rails.env.development? }
+          }
+        ]
+
+        @custom_warnings = []
+      end
+    end
+
+    class Text
+      attr_accessor :text, :color
+
+      def initialize(text, color)
+        @text  = text
+        @color = color
+      end
+
+      def colorize
+        "\033[#{color}m#{text}\033[0m"
       end
     end
 
@@ -25,31 +57,34 @@ module Rails
       console do
         configuration = ProductionConsoleWarning.configuration || Configuration.new
 
-        if configuration.condition.call
-          render_warning_to_pry_prompt(configuration.custom_text) if defined?(Pry)
-          print_warning_to_console(configuration.custom_text)
+        if configuration.warnings_condintion.call
+          warnings = configuration.default_warnings + configuration.custom_warnings
+
+          warnings.each do |warning|
+            if warning[:condition].call
+              warning_text = Text.new(warning[:text], warning[:color])
+
+              render_warning_to_pry_prompt(warning_text) if defined?(Pry)
+              print_warning_to_console(warning_text)
+
+              break
+            end
+          end
         end
       end
 
-      def red(text)
-        "\033[0;31m#{text}\033[0m"
-      end
-
       def print_warning_to_console(warning_text)
-        warning_text ||= 'Running console in PROD environment'
-        puts '#' * (warning_text.size + 4)
-        puts "# #{red(warning_text)} #"
-        puts '#' * (warning_text.size + 4)
+        puts '#' * (warning_text.text.size + 4)
+        puts "# #{warning_text.colorize} #"
+        puts '#' * (warning_text.text.size + 4)
       end
 
       def render_warning_to_pry_prompt(warning_text)
-        warning_text ||= 'PRODUCTION'
         old_prompt = Pry.config.prompt
-        #env = Pry::Helpers::Text.red(Rails.env.upcase)
-        env = Pry::Helpers::Text.red(warning_text)
+
         Pry.config.prompt = [
-          proc {|*a| "#{env} #{old_prompt.first.call(*a)}"},
-          proc {|*a| "#{env} #{old_prompt.second.call(*a)}"},
+          proc {|*a| "#{warning_text.colorize} #{old_prompt.first.call(*a)}"},
+          proc {|*a| "#{warning_text.colorize} #{old_prompt.second.call(*a)}"},
         ]
       end
     end

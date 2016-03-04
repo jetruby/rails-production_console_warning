@@ -3,14 +3,38 @@
 Create initializer to override default parameters:
 ```
 Rails::ProductionConsoleWarning.configure do |config|
-  config.custom_text = 'Custom warning!'
-  config.condition = lambda {
-    true if Rails.env.development?
-  }
+  # main condition that is called before warnings configured by @default_warnings and @custom_warnings
+  config.warnings_condintion = lambda { some_condition }
+
+  # it has default warnings, that you can ovirride
+  config.default_warnings = [
+    {
+      color: 31, #red
+      text:  'PRODUCTION',
+      condition: lambda { Rails.env.production? }
+    },
+    {
+      color: 34, #blue
+      text:  'TEST',
+      condition: lambda { Rails.env.test? }
+    },
+    {
+      color: 32, #green
+      text:  'DEVELOPMENT',
+      condition: lambda { Rails.env.development? }
+    }
+  ]
+
+  # and custom warnings that is empty by default
+  config.custom_warnings = [
+    {
+      color: 33, #brown
+      text:  'STAGING',
+      condition: lambda { Rails.env.staging? }
+    }
+  ]
 end
 ```
-
-TODO: Delete this and the text above, and describe your gem
 
 ## Installation
 
@@ -18,6 +42,10 @@ Add this line to your application's Gemfile:
 
 ```ruby
 gem 'rails-production_console_warning'
+
+or
+
+gem 'rails-production_console_warning', path: 'your/local/path'
 ```
 
 And then execute:
